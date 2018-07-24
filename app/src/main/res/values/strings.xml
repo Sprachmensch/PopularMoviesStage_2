@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Popular Movies Stage 1</string>
+    <string name="action_settings1">Sort by Ratings</string>
+    <string name="action_settings2">Sort by Popularity</string>
+    <string name="title_activity_detail">DetailActivity</string>
+    <string name="user_rating_activity_detail">Rating</string>
+    <string name="release_date_activity_detail">Release date</string>
+    <string name="rating_end">/10</string>
+</resources>
