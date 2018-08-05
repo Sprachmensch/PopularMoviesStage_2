@@ -1,4 +1,4 @@
-package com.example.sprachmensch.popularmoviesstage1;
+package com.example.sprachmensch.popularmoviesstage1.adapters;
 
 import android.content.Context;
 import android.content.Intent;
@@ -9,6 +9,9 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.example.sprachmensch.popularmoviesstage1.DetailActivity;
+import com.example.sprachmensch.popularmoviesstage1.Movie;
+import com.example.sprachmensch.popularmoviesstage1.R;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -58,7 +61,7 @@ public class MovieAdapter extends BaseAdapter {
             }
         });
 
-        Picasso.with(context)
+        Picasso.get()
                 .load(movie.getImageUrl())
                 .resize(300, 500)
                 .placeholder(R.drawable.ic_sync_black_24dp)

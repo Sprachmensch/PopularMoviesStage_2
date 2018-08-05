@@ -1,6 +1,9 @@
 package com.example.sprachmensch.popularmoviesstage1;
 
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -15,6 +18,8 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.example.sprachmensch.popularmoviesstage1.adapters.FavMovieDatabase;
+import com.example.sprachmensch.popularmoviesstage1.adapters.MovieAdapter;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -23,9 +28,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.example.sprachmensch.popularmoviesstage1.BuildConfig.*;
-
-
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,9 +35,13 @@ public class MainActivity extends AppCompatActivity {
     private MovieAdapter movieAdapter;
 
     private List<Movie> movies;
-    private boolean sortedByPopularity;
+    private int sortedByPopularity = 1;
     private String url;
-    private static final String MOVIE_DB_API_KEY=BuildConfig.MOVIE_DB_API_KEY;
+    private static final String MOVIE_DB_API_KEY = BuildConfig.MOVIE_DB_API_KEY;
+    private FavMovieDatabase db;
+    private static final String GRIDPOSITION = "Adapter";
+    private String SORTEDBYKEY = "savedSorting";
+    private int scrollToYPos = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,12 +50,21 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         gridView = findViewById(R.id.gridview);
 
+        db = FavMovieDatabase.getInstance(getApplicationContext());
+
         setSupportActionBar(toolbar);
+
+        if (savedInstanceState != null) {
+            sortedByPopularity = savedInstanceState.getInt(SORTEDBYKEY);
+            scrollToYPos = savedInstanceState.getInt(GRIDPOSITION);
+        }
 
         GetCorrectJSONFile();
         movies = new ArrayList<>();
 
         makeJSONRequest();
+
+
     }
 
     private void makeJSONRequest() {
@@ -73,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                             movieAdapter = new MovieAdapter(MainActivity.this, movies);
                             gridView.setAdapter(movieAdapter);
+                            gridView.smoothScrollToPosition(scrollToYPos);
 
                         } catch (JSONException e) {
                             Log.e("MOVIE", "BAD BAD BAD JSONException: " + e.toString());
@@ -95,10 +111,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void GetCorrectJSONFile() {
-        if (sortedByPopularity)
-            url = "http://api.themoviedb.org/3/movie/popular?api_key="+MOVIE_DB_API_KEY;
-        else
-            url = "http://api.themoviedb.org/3/movie/top_rated?api_key="+MOVIE_DB_API_KEY;
+        if (sortedByPopularity == 2)
+            url = "http://api.themoviedb.org/3/movie/popular?api_key=" + MOVIE_DB_API_KEY;
+        else if (sortedByPopularity == 1)
+            url = "http://api.themoviedb.org/3/movie/top_rated?api_key=" + MOVIE_DB_API_KEY;
     }
 
     @Override
@@ -114,35 +130,95 @@ public class MainActivity extends AppCompatActivity {
 
         // Sort by Ratings
         if (id == R.id.action_settings1) {
-            if (!sortedByPopularity)
+            if (sortedByPopularity == 1)
                 Snackbar.make(this.findViewById(android.R.id.content), "Already sorted by Rating!", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
-            else
+            else {
+                sortedByPopularity = 1;
                 switchSorting();
+            }
         }
         //  Sort by Popularity
         else if (id == R.id.action_settings2) {
-            if (sortedByPopularity)
+            if (sortedByPopularity == 2)
                 Snackbar.make(this.findViewById(android.R.id.content), "Already sorted by Popularity!", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
-            else
+            else {
+                sortedByPopularity = 2;
                 switchSorting();
+            }
+        }
+        //  Show Favorites
+        else if (id == R.id.action_settings3) {
+            if (sortedByPopularity == 3)
+                Snackbar.make(this.findViewById(android.R.id.content), "The Favorites are already shown!", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            else {
+                sortedByPopularity = 3;
+                switchSorting();
+            }
         }
 
         return super.onOptionsItemSelected(item);
     }
 
     private void switchSorting() {
-        sortedByPopularity = !sortedByPopularity;
 
-        if (sortedByPopularity)
-            Snackbar.make(this.findViewById(android.R.id.content), "Sort by Popularity", Snackbar.LENGTH_LONG)
+        if (sortedByPopularity == 2)
+            Snackbar.make(this.findViewById(android.R.id.content), "Sorted by Popularity", Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
-        else
-            Snackbar.make(this.findViewById(android.R.id.content), "Sort by Rating", Snackbar.LENGTH_LONG)
+        else if (sortedByPopularity == 1)
+            Snackbar.make(this.findViewById(android.R.id.content), "Sorted by Rating", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        else if (sortedByPopularity == 3)
+            Snackbar.make(this.findViewById(android.R.id.content), "Show the Favorites", Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
 
-        GetCorrectJSONFile();
-        makeJSONRequest();
+        if (sortedByPopularity <= 2) {
+            GetCorrectJSONFile();
+            makeJSONRequest();
+        } else {
+
+            /*
+               gets his own method someday...
+             */
+
+            final MainViewModel viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+            viewModel.getFavMovies().observe(this, new Observer<List<FavMovies>>() {
+                @Override
+                public void onChanged(@Nullable List<FavMovies> favMovies) {
+
+                    Log.d("LiveData", "db updated!");
+                    movies.clear();
+
+                    for (FavMovies fav : favMovies) {
+                        movies.add(new Movie(
+                                fav.getMovieTitle(),
+                                "http://image.tmdb.org/t/p/w185/" + fav.getPosterUrl(),
+                                Integer.parseInt(fav.getMovieId())));
+                    }
+
+                    movieAdapter = new MovieAdapter(MainActivity.this, movies);
+                    gridView.setAdapter(movieAdapter);
+                }
+            });
+
+        }
     }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+
+        state.putInt(SORTEDBYKEY, sortedByPopularity);
+        state.putInt(GRIDPOSITION,
+                gridView.getFirstVisiblePosition());
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+    }
+
+
 }
