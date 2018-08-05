@@ -106,15 +106,20 @@ private FavMovieDatabase db;
             public void onClick(View v) {
 
                 isFavorite = !isFavorite;
+
+                if (isFavorite) {
+                    imageViewFavorite.setImageResource(R.drawable.ic_grade_pink_24dp);
+                } else {
+                    imageViewFavorite.setImageResource(R.drawable.ic_grade_black_24dp);
+                }
+
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
                         if (isFavorite) {
                             db.FavMovieDao().insertFavMovie(new FavMovies(String.valueOf(position), Title, MoviePoster));
-                            imageViewFavorite.setImageResource(R.drawable.ic_grade_pink_24dp);
                         } else {
                             db.FavMovieDao().deleteFavMovie(String.valueOf(position));
-                            imageViewFavorite.setImageResource(R.drawable.ic_grade_black_24dp);
                         }
                     }
                 }).start();
